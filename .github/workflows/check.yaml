@@ -16,7 +16,7 @@ permissions:
 jobs:
   test:
     name: 🧪 Test
-    uses: tox-dev/github-workflows/.github/workflows/check.yaml@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
+    uses: tox-dev/github-workflows/.github/workflows/check.yaml@81a3fc661be49ecdc4ea4af99a69fa3879b3d7a1 # 6.8.1
     permissions:
       contents: read
     with:
@@ -71,6 +71,6 @@ jobs:
     permissions: {}
     steps:
       - name: 🚦 Require all needed jobs to pass
-        uses: tox-dev/github-workflows/required-checks@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
+        uses: tox-dev/github-workflows/required-checks@81a3fc661be49ecdc4ea4af99a69fa3879b3d7a1 # 6.8.1
         with:
           needs: ${{ toJSON(needs) }}
