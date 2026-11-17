@@ -1,0 +1,22 @@
+From: Stefano Rivera <stefano@rivera.za.net>
+Date: Sun, 8 Mar 2026 14:14:00 -0400
+Subject: Use Debian's d3.min.js
+
+Rather than loading d3.js from jsdelivr, we'll symlink to the version in
+the Debian libjs-d3 package.
+
+Forwarded: not-needed
+---
+ docs/conf.py | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/docs/conf.py b/docs/conf.py
+index 8cb145b..fb04b8c 100644
+--- a/docs/conf.py
++++ b/docs/conf.py
+@@ -77,3 +77,5 @@ html_theme_options = {
+ html_css_files = ["custom.css"]
+ 
+ markdown_http_base = os.environ.get("READTHEDOCS_CANONICAL_URL", "")
++
++d3_use_local = "d3.min.js"

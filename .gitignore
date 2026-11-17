@@ -1,0 +1,6 @@
+*.pyc
+*.egg-info
+dist/
+.tox/
+/src/python_discovery/_version.py
+/uv.lock

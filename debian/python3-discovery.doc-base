@@ -1,0 +1,12 @@
+Document: python-discovery
+Title: python-discovery Documentation
+Author: Bernát Gábor
+Abstract: python-discover is a Python Library to locate Python interpreters
+Section: Programming/Python
+
+Format: HTML
+Index: /usr/share/doc/python3-discovery/html/index.html
+Files: /usr/share/doc/python3-discovery/html/*.html
+
+Format: Text
+Files: /usr/share/doc/python3-discovery/rst/*.txt

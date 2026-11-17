@@ -1,0 +1,5 @@
+Version: 5
+
+Source: https://pypi.debian.net/python-discovery/
+Matching-Pattern: python_discovery-(.+)\.(?:zip|tgz|tbz|txz|(?:tar\.(?:gz|bz2|xz)))
+Uversionmangle: s/(rc|a|b|c)/~$1/

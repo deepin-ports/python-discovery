@@ -1,0 +1,184 @@
+from __future__ import annotations
+
+import pytest
+
+from python_discovery import PythonSpec
+
+
+def test_specifier_parse_failure_fallback() -> None:
+    spec = PythonSpec.from_string_spec("not_a_valid_anything_really")
+    assert spec.path == "not_a_valid_anything_really"
+    assert spec.version_specifier is None
+
+
+def test_version_specifier_satisfies_micro() -> None:
+    spec = PythonSpec.from_string_spec(">=3.12.0")
+    candidate = PythonSpec("", "CPython", 3, 12, 1, None, None)
+    assert candidate.satisfies(spec) is True
+
+
+def test_version_specifier_satisfies_fails_micro() -> None:
+    spec = PythonSpec.from_string_spec(">=3.13.0")
+    candidate = PythonSpec("", "CPython", 3, 12, 5, None, None)
+    assert candidate.satisfies(spec) is False
+
+
+def test_version_specifier_no_components() -> None:
+    spec = PythonSpec.from_string_spec(">=3.12")
+    candidate = PythonSpec("", None, None, None, None, None, None)
+    assert candidate.satisfies(spec) is True
+
+
+def test_check_version_specifier_precision() -> None:
+    spec = PythonSpec.from_string_spec(">=3.12")
+    candidate = PythonSpec("", "CPython", 3, None, None, None, None)
+    assert candidate._check_version_specifier(spec) is True
+
+
+def test_check_version_specifier_precision_micro() -> None:
+    spec = PythonSpec.from_string_spec(">=3.12.0")
+    candidate = PythonSpec("", "CPython", 3, 12, None, None, None)
+    assert candidate._check_version_specifier(spec) is True
+
+
+def test_check_version_specifier_fails() -> None:
+    spec = PythonSpec.from_string_spec(">=3.13")
+    candidate = PythonSpec("", "CPython", 3, 12, 0, None, None)
+    assert candidate._check_version_specifier(spec) is False
+
+
+def test_check_version_specifier_none() -> None:
+    spec = PythonSpec("", None, None, None, None, None, None)
+    candidate = PythonSpec("", "CPython", 3, 12, 0, None, None)
+    assert candidate._check_version_specifier(spec) is True
+
+
+def test_get_required_precision_none() -> None:
+    from python_discovery._specifier import SimpleSpecifier
+
+    specifier = SimpleSpecifier(
+        spec_str=">=3.12",
+        operator=">=",
+        version_str="3.12",
+        is_wildcard=False,
+        wildcard_precision=None,
+        version=None,
+    )
+    assert PythonSpec._get_required_precision(specifier) is None
+
+
+def test_get_required_precision_normal() -> None:
+    from python_discovery._specifier import SimpleSpecifier
+
+    specifier = SimpleSpecifier.from_string(">=3.12.0")
+    assert PythonSpec._get_required_precision(specifier) == 3
+
+
+def test_generate_re_no_threaded() -> None:
+    spec = PythonSpec.from_string_spec("python3.12")
+    pat = spec.generate_re(windows=False)
+    assert pat.fullmatch("python3.12") is not None
+
+
+def test_generate_re_with_threaded() -> None:
+    spec = PythonSpec.from_string_spec("python3.12t")
+    pat = spec.generate_re(windows=False)
+    assert pat.fullmatch("python3.12t") is not None
+
+
+@pytest.mark.parametrize("name", ["python3.12-dbg", "python3.12d", "python3.12"])
+def test_generate_re_with_debug(name: str) -> None:
+    spec = PythonSpec.from_string_spec("python3.12-dbg")
+    pat = spec.generate_re(windows=False)
+    assert pat.fullmatch(name) is not None
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param("python3.99t", id="free-threaded"),
+        pytest.param("python3.99d", id="debug-abi"),
+        pytest.param("python3.99-dbg", id="debug-short"),
+        pytest.param("python3.99-debug", id="debug-long"),
+        pytest.param("python3.99td", id="free-threaded-debug-abi"),
+        pytest.param("python3.99t-dbg", id="free-threaded-debug-short"),
+    ],
+)
+@pytest.mark.parametrize("windows", [pytest.param(False, id="posix"), pytest.param(True, id="windows")])
+def test_generate_re_all_implementations_matches_variant_names(name: str, windows: bool) -> None:
+    spec = PythonSpec("", None, None, None, None, None, None)
+    pat = spec.generate_re(windows=windows, all_implementations=True)
+    assert pat.fullmatch(f"{name}.exe" if windows else name) is not None
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param("python3.99t", id="free-threaded"),
+        pytest.param("python3.99d", id="debug-abi"),
+        pytest.param("python3.99-dbg", id="debug-debian"),
+    ],
+)
+@pytest.mark.parametrize("key", [pytest.param("python", id="name"), pytest.param("3.99", id="version")])
+def test_generate_re_single_lookup_skips_variant_names(key: str, name: str) -> None:
+    pat = PythonSpec.from_string_spec(key).generate_re(windows=False)
+    assert pat.fullmatch(name) is None
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param("python3.99t", id="free-threaded"),
+        pytest.param("python3.99d", id="debug-abi"),
+        pytest.param("python3.99-dbg", id="debug-debian"),
+    ],
+)
+def test_generate_re_all_implementations_keeps_ruled_out_variants_out(name: str) -> None:
+    spec = PythonSpec("", None, 3, 99, None, None, None, free_threaded=False, debug=False)
+    pat = spec.generate_re(windows=False, all_implementations=True)
+    assert pat.fullmatch(name) is None
+
+
+def test_single_digit_version() -> None:
+    spec = PythonSpec.from_string_spec("python3")
+    assert spec.major == 3
+    assert spec.minor is None
+
+
+def test_two_digit_version() -> None:
+    spec = PythonSpec.from_string_spec("python312")
+    assert spec.major == 3
+    assert spec.minor == 12
+
+
+def test_single_digit_major_only() -> None:
+    spec = PythonSpec.from_string_spec("python3")
+    assert spec.major == 3
+    assert spec.minor is None
+
+
+def test_specifier_set_parsed_for_valid_format() -> None:
+    spec = PythonSpec.from_string_spec("cpython>=3.12")
+    assert spec.version_specifier is not None
+    assert spec.implementation == "cpython"
+
+
+@pytest.mark.parametrize(
+    ("candidate", "text", "expected"),
+    [
+        pytest.param("3.11", ">=3.13", False, id="minor-too-old"),
+        pytest.param("3.14", "<3.13", False, id="minor-too-new"),
+        pytest.param("3.11", "==3.12.*", False, id="minor-wildcard-miss"),
+        pytest.param("3.12", "==3.12.*", True, id="minor-wildcard-hit"),
+        pytest.param("3.13", ">=3.12,<3.14", True, id="minor-in-range"),
+        pytest.param("3", ">=4", False, id="major-too-old"),
+        pytest.param("3.12", ">=3.12.5", True, id="micro-unknown"),
+        pytest.param("3.12.1", "==3.12", True, id="micro-at-minor-precision"),
+        pytest.param("3.14", "==3.14rc1", True, id="prerelease-unknown"),
+        pytest.param("3.14", "<=3.14rc1", True, id="prerelease-upper-bound-unknown"),
+        pytest.param("3.14.0", "==3.14.0rc1", True, id="prerelease-unknown-at-micro-precision"),
+        pytest.param("3.13", ">=3.14rc1", False, id="earlier-release-still-filtered"),
+    ],
+)
+def test_version_specifier_compared_at_written_precision(candidate: str, text: str, expected: bool) -> None:
+    assert PythonSpec.from_string_spec(candidate).satisfies(PythonSpec.from_string_spec(text)) is expected

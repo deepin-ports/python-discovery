@@ -1,0 +1,10 @@
+---
+Bug-Database: https://github.com/tox-dev/python-discovery/issues
+Bug-Submit: https://github.com/tox-dev/python-discovery/issues/new
+Changelog: https://github.com/tox-dev/python-discovery/releases
+Documentation: https://python-discovery.readthedocs.io/
+Registry:
+  - Name: PyPI
+    Entry: python-discovery
+Repository: https://github.com/tox-dev/python-discovery.git
+Repository-Browse: https://github.com/tox-dev/python-discovery
